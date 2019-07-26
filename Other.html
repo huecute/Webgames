@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset = "utf-8"/>
+<title>Game</title>
+<style>
+*{
+	padding:0; margin:0;
+}
+canvas{
+	display: block; margin: auto;
+}
+</style>
+</head>
+
+<body>
+	<canvas id ="theCanvas" width="1000" height="500" style="border:1px solid #d3d3d3;"></canvas>
+
+<script>
+var canvas = document.getElementById("theCanvas");
+var ctx = canvas.getContext("2d");
+var shipHeight = 15;
+var shipWidth = 60;
+var shipX = (canvas.width-shipWidth) / 2;
+var shipY = canvas.height-shipHeight-20
+var rightPressed = false;
+var leftPressed = false;
+var upPressed = false;
+var downPressed = false;
+var ballX = shipX;
+var ballY = shipY;
+var monsterRowCount = 6;
+var monsterColumnCount = 10;
+var monsterWidth = 30;
+var monsterHeight = 20;
+var monsterPadding = 25;
+var monsterOffsetTop = 50;
+var monsterOffsetLeft = 240;
+var monsters = [];
+for(var c=0; c<monsterColumnCount; c++) {
+	monsters[c] = [];
+	for(var r=0; r<monsterRowCount; r++) {
+		monsters[c][r] = { x: 0, y: 0, status: 1 };
+	}
+}
+var shoot = false;
+var y = 0;
+var monX = 0;
+var dx = 1;
+var monY = 0;
+var score = 0;
+var lives = 3;
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
+function keyDownHandler(e) {
+	if(e.key == "Right" || e.key == "ArrowRight") {
+		rightPressed = true;
+	}
+	else if(e.key == "Left" || e.key == "ArrowLeft") {
+		leftPressed = true;
+	}
+	if(e.key == "Up" || e.key == "ArrowUp"){
+		upPressed = true;
+	}
+	else if(e.key == "Down" || e.key == "ArrowDown"){
+		downPressed = true;
+	}
+	if(e.keyCode == 32 && shoot == false){
+		ballX = shipX;
+		ballY = shipY;
+		y = 0;
+		shoot = true;
+	}
+}
+	
+function keyUpHandler(e) {
+	if(e.key == "Right" || e.key == "ArrowRight") {
+		rightPressed = false;
+	}
+	else if(e.key == "Left" || e.key == "ArrowLeft") {
+		leftPressed = false;
+	}
+	if(e.key == "Up" || e.key == "ArrowUp"){
+		upPressed = false;
+	}
+	else if(e.key == "Down" || e.key == "ArrowDown"){
+		downPressed = false;
+	}
+}
+	
+function drawScore() {
+	ctx.font = "16px Arial";
+	ctx.fillStyle = "#0095DD";
+	ctx.fillText("Score: "+score, 8, 20);
+	ctx.closePath();
+}
+function drawLives() {
+	ctx.font = "16px Arial";
+	ctx.fillStyle = "Red";
+	ctx.fillText("Lives: "+lives, canvas.width-65, 20);
+	ctx.closePath();
+}
+function ship() {
+	ctx.beginPath();
+	ctx.rect(shipX, shipY, shipWidth, shipHeight);
+	ctx.fillStyle = "#0095DD";
+	ctx.fill();
+	ctx.closePath();
+	ctx.beginPath();
+	ctx.rect(shipX+50, shipY-20, shipWidth-50, shipHeight+10);
+	ctx.fillStyle = "#0095DD";
+	ctx.fill();
+	ctx.closePath();
+	ctx.beginPath();
+	ctx.rect(shipX, shipY-20, shipWidth-50, shipHeight+10);
+	ctx.fillStyle = "#0095DD";
+	ctx.fill();
+	ctx.closePath();
+	ctx.beginPath();
+	ctx.rect(shipX+22.5, shipY-40, shipWidth-45, shipHeight+30);
+	ctx.fillStyle = "#0095DD";
+	ctx.fill();
+	ctx.closePath();
+}
+
+function mon(x, y) {
+	for(var c=0; c<monsterColumnCount; c++) {
+		for(var r=0; r<monsterRowCount; r++) {
+			if(monsters[c][r].status > 0) {
+				var monsterX = (c*(monsterWidth+monsterPadding))+monsterOffsetLeft;
+				var monsterY = (r*(monsterHeight+monsterPadding))+monsterOffsetTop;
+				monsters[c][r].x = monsterX;
+				monsters[c][r].y = monsterY;
+				ctx.beginPath();
+				ctx.rect(monsterX + x, monsterY + y, monsterWidth, monsterHeight);
+				ctx.fillStyle = "#78F580";
+				ctx.fill();
+				ctx.closePath();
+				ctx.beginPath();
+				ctx.arc(monsterX + x + 15, monsterY + y + 10, 7, 0, 2*Math.PI);
+				ctx.fillStyle = "Red";
+				ctx.fill();
+				ctx.closePath();
+				ctx.beginPath();
+				ctx.arc(monsterX + x + 15, monsterY + y + 10, 2.5, 0, 2*Math.PI);
+				ctx.fillStyle = "Black";
+				ctx.fill();
+				ctx.closePath();
+			}
+		}
+	}
+}
+
+function collisionDetection() {
+	for(var c=0; c<monsterColumnCount; c++) {
+		for(var r=0; r<monsterRowCount; r++) {
+			var m = monsters[c][r];
+			if(m.status > 0) {
+				if((m.x + monX < (ballX + 30)) && ((m.x + monX + monsterWidth) > (ballX + 30)) && 
+				((ballY + y - 30) > m.y + monY) && ((m.y + monY + monsterHeight) > (ballY + y - 30))) {
+					shoot = false;
+					ballY = 0;
+					m.status -= 1;
+					score += 1;
+				}
+				if((m.x + monX < (shipX)) && ((m.x + monX + monsterWidth) > (shipX)) && 
+				((shipY) > m.y + monY) && ((m.y + monY + monsterHeight) > (shipY))){
+					shipX = (canvas.width-shipWidth) / 2;
+					shipY = canvas.height-shipHeight-20
+					m.status -= 1;
+					lives -=1;
+				}
+			}
+		}
+	}
+}
+
+function ball(x,y){
+	ctx.beginPath();
+	ctx.arc(x + 30,y - 30,5,0,2*Math.PI);
+	ctx.fillStyle = "purple";
+	ctx.fill();
+	ctx.closePath()
+}
+function ballLeft(x,y){
+	ctx.beginPath();
+	ctx.arc(x,y - 20,5,0,2*Math.PI);
+	ctx.fillStyle = "red";
+	ctx.fill();
+	ctx.closePath()
+}
+function ballRight(x,y){
+	ctx.beginPath();
+	ctx.arc(x + 60,y - 20,5,0,2*Math.PI);
+	ctx.fillStyle = "red";
+	ctx.fill();
+	ctx.closePath()
+}
+function draw(){
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+	ship();
+	mon(monX, monY);
+	drawScore();
+	collisionDetection();
+	drawLives();
+	if(rightPressed && shipX < canvas.width - shipWidth) {
+		shipX += 5;
+	}
+	if(leftPressed && shipX > 0 ) {
+		shipX -=5;
+	}
+	if(upPressed && shipY > 0) {
+		shipY -= 5;
+	}
+	if(downPressed && canvas.height - shipHeight > shipY) {
+		shipY += 5;
+	}
+	if(shoot){
+		ball(ballX, ballY + y);
+		ballLeft(ballX, ballY + y);
+		ballRight(ballX, ballY + y);
+	}
+	if(ballY + y  <  0){
+		shoot = false;
+	}
+	y -= 7;
+	if(monX > 200 || monX < -200){
+		dx = -dx;
+		monY += 10;
+	}
+	if(!lives) {
+		alert("Game Over");
+		document.location.reload();
+		clearInterval(interval); // Needed for Chrome to end game
+	}
+	monX += dx;
+	
+}setInterval(draw, 10);
+
+
+
+
+
+
+</script>
+
+</body>
+</html>	
